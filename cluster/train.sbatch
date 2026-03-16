@@ -48,7 +48,7 @@ if [ ! -f "${REPO}/weights/rtdetr_r50vd_objects365.pth" ]; then
     echo "ERROR: Pretrained weights not found at ${REPO}/weights/rtdetr_r50vd_objects365.pth"
     echo "Download with:"
     echo "  mkdir -p ${REPO}/weights"
-    echo "  wget https://github.com/lyuwenyu/RT-DETR/releases/download/v0.1/rtdetr_r50vd_2x_coco_objects365_from_paddle.pth \\"
+    echo "  wget https://github.com/lyuwenyu/storage/releases/download/v0.1/rtdetr_r50vd_2x_coco_objects365_from_paddle.pth \\"
     echo "       -O ${REPO}/weights/rtdetr_r50vd_objects365.pth"
     exit 1
 fi

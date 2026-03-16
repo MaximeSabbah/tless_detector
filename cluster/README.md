@@ -145,10 +145,11 @@ git submodule update --init --recursive
 ```bash
 cd ~/tless_detector
 
-# Install huggingface_hub if needed (just for the download script)
-pip install --user huggingface_hub
+# One-liner: install, run, done
+python3 -m venv /tmp/dl_venv && \
+/tmp/dl_venv/bin/pip install -q huggingface_hub && \
+/tmp/dl_venv/bin/python data/download_tless.py
 
-python data/download_tless.py
 ```
 
 You should see progress bars. When done:
@@ -168,7 +169,7 @@ ls /datasets/tless/train_pbr/ | head
 
 ```bash
 mkdir -p ~/tless_detector/weights
-wget https://github.com/lyuwenyu/RT-DETR/releases/download/v0.1/rtdetr_r50vd_2x_coco_objects365_from_paddle.pth \
+wget https://github.com/lyuwenyu/storage/releases/download/v0.1/rtdetr_r50vd_2x_coco_objects365_from_paddle.pth \
      -O ~/tless_detector/weights/rtdetr_r50vd_objects365.pth
 
 # Check it downloaded correctly (should be ~200 MB):
