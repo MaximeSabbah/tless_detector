@@ -147,7 +147,7 @@ cd ~/tless_detector
 
 # One-liner: install, run, done
 python3 -m venv /tmp/dl_venv && \
-/tmp/dl_venv/bin/pip install -q huggingface_hub && \
+/tmp/dl_venv/bin/pip install -q tqdm opencv-python-headless huggingface_hub trimesh && \
 /tmp/dl_venv/bin/python data/download_tless.py
 
 ```
@@ -180,7 +180,7 @@ ls -lh ~/tless_detector/weights/
 
 ```bash
 cd ~/tless_detector
-python scripts/prepare_dataset.py
+/tmp/dl_venv/bin/python scripts/prepare_dataset.py
 ```
 
 This takes 2-3 minutes. When done:
@@ -203,7 +203,7 @@ Before spending GPU hours training, verify the annotations look correct.
 3. Run:
    ```bash
    cd ~/tless_detector
-   python scripts/verify_dataset.py
+   /tmp/dl_venv/bin/python ~/tless_detector/scripts/verify_dataset.py
    ```
 
 4. In the JupyterLab file browser (left panel), navigate to:
