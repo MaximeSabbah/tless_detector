@@ -39,9 +39,10 @@ From: nvcr.io/nvidia/pytorch:24.01-py3
 
     # Python packages needed for training + export
     pip install --no-cache-dir \
+        "numpy>=1.21,<2.0" \
         "huggingface_hub>=0.20" \
         "onnx>=1.14" \
-        onnxruntime-gpu \
+        "onnxruntime-gpu<1.19" \
         onnxsim \
         pycocotools \
         opencv-python-headless \
