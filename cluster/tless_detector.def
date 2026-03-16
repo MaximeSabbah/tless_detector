@@ -7,7 +7,7 @@
 #   sudo apptainer build cluster/tless_detector.sif cluster/tless_detector.def
 #
 # THEN COPY TO pfcalcul:
-#   scp cluster/tless_detector.sif YOUR_LOGIN@pfcalcul.laas.fr:~/containers/
+#   scp cluster/tless_detector.sif msabbah@pfcalcul.laas.fr:~/containers/
 #
 # CHOOSING THE RIGHT TAG:
 #   The NGC image tag determines the CUDA version.
@@ -60,6 +60,6 @@ From: nvcr.io/nvidia/pytorch:24.01-py3
     export MKL_NUM_THREADS=1
 
 %labels
-    Author  YOUR_NAME@laas.fr
+    Author  msabbah@laas.fr
     Purpose RT-DETR training for T-LESS objects (FoundationPose detector)
     Base    nvcr.io/nvidia/pytorch:24.01-py3

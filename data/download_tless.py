@@ -27,7 +27,7 @@ if not readme.exists():
         "# T-LESS BOP Dataset\n\n"
         "Downloaded for RT-DETR training (2D detection front-end for FoundationPose).\n\n"
         "Source: https://bop.felk.cvut.cz/datasets/ (HuggingFace: bop-benchmark/tless)\n\n"
-        "Contact: <YOUR_NAME>@laas.fr\n"
+        "Contact: <msabbah>@laas.fr\n"
     )
     print(f"Created README at {readme}")
 

@@ -18,7 +18,7 @@ from pathlib import Path
 from tqdm import tqdm
 
 # ── EDIT THIS ──────────────────────────────────────────────────────────────────
-LOGIN = "YOUR_LOGIN"   # your pfcalcul login name, e.g. "jdupont"
+LOGIN = "msabbah"   # your pfcalcul login name, e.g. "jdupont"
 # ──────────────────────────────────────────────────────────────────────────────
 
 TRAIN_PBR_DIR = Path("/datasets/tless/train_pbr")

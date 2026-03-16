@@ -1,7 +1,7 @@
 # RT-DETR training configuration for T-LESS (30 industrial objects)
 # Extends the official RT-DETR r50vd COCO config, overriding only what changes.
 #
-# IMPORTANT: Replace YOUR_LOGIN with your pfcalcul login before running.
+# IMPORTANT: Replace msabbah with your pfcalcul login before running.
 #
 # The base config is at:
 #   third_party/RT-DETR/rtdetr_pytorch/configs/rtdetr/rtdetr_r50vd_6x_coco.yml
@@ -19,7 +19,7 @@ num_classes: 30
 train_dataloader:
   dataset:
     img_folder: /datasets/tless
-    ann_file: /home/YOUR_LOGIN/tless_detector/data/tless_coco_train.json
+    ann_file: /home/msabbah/tless_detector/data/tless_coco_train.json
     return_masks: False
   batch_size: 8       # reduce to 4 if you see CUDA out-of-memory errors
   shuffle: True
@@ -29,7 +29,7 @@ train_dataloader:
 val_dataloader:
   dataset:
     img_folder: /datasets/tless
-    ann_file: /home/YOUR_LOGIN/tless_detector/data/tless_coco_val.json
+    ann_file: /home/msabbah/tless_detector/data/tless_coco_val.json
     return_masks: False
   batch_size: 4
   shuffle: False
@@ -64,4 +64,4 @@ lr_warmup_scheduler:
   warmup_duration: 2000   # steps (not epochs)
 
 # ── Output ─────────────────────────────────────────────────────────────────────
-output_dir: /home/YOUR_LOGIN/tless_detector/output/rtdetr_r50vd_tless
+output_dir: /home/msabbah/tless_detector/output/rtdetr_r50vd_tless

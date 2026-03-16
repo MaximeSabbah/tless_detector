@@ -17,7 +17,7 @@ from pathlib import Path
 import cv2
 
 # ── EDIT THIS ──────────────────────────────────────────────────────────────────
-LOGIN = "YOUR_LOGIN"
+LOGIN = "msabbah"
 # ──────────────────────────────────────────────────────────────────────────────
 
 COCO_JSON    = Path(f"/home/{LOGIN}/tless_detector/data/tless_coco_train.json")

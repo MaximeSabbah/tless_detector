@@ -28,7 +28,7 @@ import onnxruntime as ort
 import onnxsim
 
 # ── EDIT THIS ──────────────────────────────────────────────────────────────────
-LOGIN = "YOUR_LOGIN"
+LOGIN = "msabbah"
 # ──────────────────────────────────────────────────────────────────────────────
 
 # These are the exact names isaac_ros_rtdetr expects at the TRT binding level.

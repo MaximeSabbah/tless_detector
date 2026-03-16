@@ -3,29 +3,29 @@
 # SLURM job script for T-LESS RT-DETR training on pfcalcul (LAAS-CNRS)
 #
 # Submit with:   sbatch cluster/train.sbatch
-# Monitor with:  squeue -u YOUR_LOGIN
+# Monitor with:  squeue -u msabbah
 # Logs at:       ~/tless_detector/logs/train_JOBID.out
 #
-# IMPORTANT: Replace YOUR_LOGIN and YOUR_TEAM before submitting.
+# IMPORTANT: Replace msabbah and gepetto before submitting.
 # =============================================================================
 
 #SBATCH --job-name=tless_rtdetr
 #SBATCH --partition=gpu
-#SBATCH --account=team_YOUR_TEAM      # Ask your team for the correct account name
+#SBATCH --account=team_gepetto      # Ask your team for the correct account name
 #SBATCH --gres=gpu:1                  # Request 1 GPU
 #SBATCH --cpus-per-task=8             # 8 CPU cores (4 for dataloader + headroom)
 #SBATCH --mem=32G                     # 32 GB RAM
 #SBATCH --time=20:00:00               # 20 hours max (72 epochs ~ 8-16h)
-#SBATCH --output=/home/YOUR_LOGIN/tless_detector/logs/train_%j.out
-#SBATCH --error=/home/YOUR_LOGIN/tless_detector/logs/train_%j.err
+#SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
+#SBATCH --error=/home/msabbah/tless_detector/logs/train_%j.err
 #SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=YOUR_LOGIN@laas.fr
+#SBATCH --mail-user=msabbah@laas.fr
 
 # =============================================================================
 # Paths — only edit if you changed the repo location
 # =============================================================================
-REPO=/home/YOUR_LOGIN/tless_detector
-CONTAINER=/home/YOUR_LOGIN/containers/tless_detector.sif
+REPO=/home/msabbah/tless_detector
+CONTAINER=/home/msabbah/containers/tless_detector.sif
 
 # =============================================================================
 # Pre-flight checks
@@ -34,7 +34,7 @@ if [ ! -f "${CONTAINER}" ]; then
     echo "ERROR: Container not found at ${CONTAINER}"
     echo "Build it locally and copy with:"
     echo "  sudo apptainer build cluster/tless_detector.sif cluster/tless_detector.def"
-    echo "  scp cluster/tless_detector.sif YOUR_LOGIN@pfcalcul.laas.fr:~/containers/"
+    echo "  scp cluster/tless_detector.sif msabbah@pfcalcul.laas.fr:~/containers/"
     exit 1
 fi
 
@@ -90,7 +90,7 @@ echo ""
 
 apptainer exec \
     --nvcli \
-    --bind /home/YOUR_LOGIN:/home/YOUR_LOGIN \
+    --bind /home/msabbah:/home/msabbah \
     --bind /datasets:/datasets \
     ${CONTAINER} \
     bash -c "
