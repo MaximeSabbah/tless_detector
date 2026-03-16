@@ -196,7 +196,7 @@ Saved val:    2500 images,  ~13000 annotations → /home/YOUR_LOGIN/tless_detect
 Before spending GPU hours training, verify the annotations look correct.
 
 1. Go to the pfcalcul JupyterLab:
-   **https://pfcalcul.laas.fr → JupyterLAB RTX PRO 6000**
+   **https://pfcalcul.laas.fr/cuda-94gb/ → JupyterLAB RTX PRO 6000**
 
 2. Open a terminal (click the `+` tab, then "Terminal")
 
