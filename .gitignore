@@ -1,0 +1,38 @@
+# Dataset (large, stored on /datasets/ on pfcalcul, not in repo)
+data/tless/
+data/tless_obj_meshes/
+data/*.json
+
+# Model weights and outputs
+output/
+weights/
+*.pth
+*.onnx
+*.plan
+*.sif
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+dist/
+build/
+.env
+venv/
+.venv/
+
+# Logs
+logs/
+*.out
+*.err
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# OS
+.DS_Store

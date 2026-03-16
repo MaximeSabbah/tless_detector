@@ -1,0 +1,65 @@
+# Apptainer (ex-Singularity) container definition for T-LESS RT-DETR training.
+#
+# BASE IMAGE: NVIDIA NGC PyTorch — already contains CUDA, cuDNN, NCCL, PyTorch.
+# This avoids having to install CUDA ourselves.
+#
+# HOW TO BUILD (on your LOCAL machine, needs sudo — NOT on pfcalcul):
+#   sudo apptainer build cluster/tless_detector.sif cluster/tless_detector.def
+#
+# THEN COPY TO pfcalcul:
+#   scp cluster/tless_detector.sif YOUR_LOGIN@pfcalcul.laas.fr:~/containers/
+#
+# CHOOSING THE RIGHT TAG:
+#   The NGC image tag determines the CUDA version.
+#   The host GPU driver must be >= the minimum required by that CUDA version.
+#   To check the driver on pfcalcul: ssh to frontal, run: nvidia-smi
+#   Then look up the compatibility table:
+#   https://docs.nvidia.com/deeplearning/frameworks/pytorch-release-notes/
+#
+#   Common combinations:
+#     pytorch:24.01-py3  →  CUDA 12.3, requires driver >= 525
+#     pytorch:23.03-py3  →  CUDA 12.1, requires driver >= 520
+#     pytorch:22.12-py3  →  CUDA 12.0, requires driver >= 520
+#     pytorch:22.06-py3  →  CUDA 11.7, requires driver >= 450  (older clusters)
+#
+Bootstrap: docker
+From: nvcr.io/nvidia/pytorch:24.01-py3
+
+%post
+    # System packages needed by OpenCV and other libs
+    apt-get update -q && apt-get install -y -q \
+        git \
+        wget \
+        libglib2.0-0 \
+        libsm6 \
+        libxext6 \
+        libxrender1 \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*
+
+    # Python packages needed for training + export
+    pip install --no-cache-dir \
+        "huggingface_hub>=0.20" \
+        "onnx>=1.14" \
+        onnxruntime-gpu \
+        onnxsim \
+        pycocotools \
+        opencv-python-headless \
+        matplotlib \
+        tqdm \
+        scipy \
+        trimesh
+
+%environment
+    # Prevent output buffering (so logs appear immediately in SLURM .out files)
+    export PYTHONUNBUFFERED=1
+
+    # Prevent PyTorch DataLoader workers from fighting over CPU cores inside SLURM.
+    # SLURM already controls how many cores the job gets via --cpus-per-task.
+    export OMP_NUM_THREADS=1
+    export MKL_NUM_THREADS=1
+
+%labels
+    Author  YOUR_NAME@laas.fr
+    Purpose RT-DETR training for T-LESS objects (FoundationPose detector)
+    Base    nvcr.io/nvidia/pytorch:24.01-py3

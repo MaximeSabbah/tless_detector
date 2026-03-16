@@ -1,0 +1,67 @@
+# RT-DETR training configuration for T-LESS (30 industrial objects)
+# Extends the official RT-DETR r50vd COCO config, overriding only what changes.
+#
+# IMPORTANT: Replace YOUR_LOGIN with your pfcalcul login before running.
+#
+# The base config is at:
+#   third_party/RT-DETR/rtdetr_pytorch/configs/rtdetr/rtdetr_r50vd_6x_coco.yml
+
+__include__: ../third_party/RT-DETR/rtdetr_pytorch/configs/rtdetr/rtdetr_r50vd_6x_coco.yml
+
+# ── Model ──────────────────────────────────────────────────────────────────────
+# Override the number of classes (30 T-LESS objects instead of 80 COCO classes)
+num_classes: 30
+
+# ── Dataset ────────────────────────────────────────────────────────────────────
+# img_folder is the root from which file_name in the COCO JSON is relative.
+# Since prepare_dataset.py stores paths relative to /datasets/tless/,
+# the img_folder must be /datasets/tless/.
+train_dataloader:
+  dataset:
+    img_folder: /datasets/tless
+    ann_file: /home/YOUR_LOGIN/tless_detector/data/tless_coco_train.json
+    return_masks: False
+  batch_size: 8       # reduce to 4 if you see CUDA out-of-memory errors
+  shuffle: True
+  num_workers: 4
+  drop_last: True
+
+val_dataloader:
+  dataset:
+    img_folder: /datasets/tless
+    ann_file: /home/YOUR_LOGIN/tless_detector/data/tless_coco_val.json
+    return_masks: False
+  batch_size: 4
+  shuffle: False
+  num_workers: 4
+  drop_last: False
+
+# ── Training schedule ──────────────────────────────────────────────────────────
+# 72 epochs (the standard 6x COCO schedule).
+# On T-LESS PBR with a single A100 this takes roughly 8-12 hours.
+# You can stop early at epoch 36 and check val mAP if time is limited.
+epoches: 72
+
+# ── Optimizer ──────────────────────────────────────────────────────────────────
+# Lower LR for backbone (pretrained) vs head (trained from scratch).
+optimizer:
+  type: AdamW
+  params:
+    - params: '^(?=.*backbone)(?=.*norm).*$'
+      lr: 0.00001
+      weight_decay: 0.
+    - params: '^(?=.*backbone)(?!.*norm).*$'
+      lr: 0.00001
+    - params: '^(?!.*backbone)(?=.*norm).*$'
+      weight_decay: 0.
+    - params: '^(?!.*backbone)(?!.*norm).*$'
+      lr: 0.0001
+  lr: 0.0001
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+lr_warmup_scheduler:
+  warmup_duration: 2000   # steps (not epochs)
+
+# ── Output ─────────────────────────────────────────────────────────────────────
+output_dir: /home/YOUR_LOGIN/tless_detector/output/rtdetr_r50vd_tless
