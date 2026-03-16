@@ -89,11 +89,13 @@ git push
 The `.sif` file is several GB, so copy it separately (not via git):
 
 ```bash
-# Replace YOUR_LOGIN with your pfcalcul login
-scp cluster/tless_detector.sif YOUR_LOGIN@pfcalcul.laas.fr:~/containers/
+rsync -avz --progress cluster/tless_detector.sif \
+    YOUR_LOGIN@pfcalcul.laas.fr:~/containers/
 
-# If ~/containers/ doesn't exist yet, create it first:
-# ssh YOUR_LOGIN@pfcalcul.laas.fr "mkdir -p ~/containers"
+# Copying results back:
+rsync -avz --progress \
+    YOUR_LOGIN@pfcalcul.laas.fr:~/tless_detector/output/tless_rtdetr.onnx \
+    ${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/
 ```
 
 ---
@@ -301,6 +303,11 @@ scancel 12345
 ```
 
 ---
+
+# Run this FROM your laptop after training finishes:
+rsync -avz --progress \
+    YOUR_LOGIN@pfcalcul.laas.fr:~/tless_detector/output/rtdetr_r50vd_tless/best.pth \
+    ~/tless_results/
 
 ## Part 5 — Export the trained model to ONNX
 
