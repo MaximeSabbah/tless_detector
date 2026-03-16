@@ -10,8 +10,8 @@
 # =============================================================================
 
 #SBATCH --job-name=tless_rtdetr
-#SBATCH --partition=gpu
-#SBATCH --account=team_gepetto      # Ask your team for the correct account name
+#SBATCH --partition=robgpu
+#SBATCH --account=dept_rob
 #SBATCH --gres=gpu:1                  # Request 1 GPU
 #SBATCH --cpus-per-task=8             # 8 CPU cores (4 for dataloader + headroom)
 #SBATCH --mem=32G                     # 32 GB RAM
