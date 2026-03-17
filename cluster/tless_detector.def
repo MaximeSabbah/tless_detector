@@ -1,32 +1,32 @@
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:23.10-py3
+From: nvcr.io/nvidia/pytorch:25.06-py3
 
 %post
     apt-get update -q && apt-get install -y -q \
-        git wget libglib2.0-0 libsm6 libxext6 libxrender1 \
+        libglib2.0-0 libsm6 libxext6 libxrender1 \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-    # Critical pins — these exact combinations are confirmed working
+    # RT-DETR v2 official requirements (mirrors their Dockerfile exactly)
+    pip install --upgrade pip
     pip install --no-cache-dir \
-        "torch==2.2.0" \
-        "torchvision==0.17.0" \
-        "numpy>=1.21,<2.0"
-
-    # RTDETRv2 requirements — versions can float
-    pip install --no-cache-dir \
+        "torch>=2.0.1" \
+        "torchvision>=0.15.2" \
         "faster-coco-eval>=1.6.6" \
         PyYAML \
         tensorboard \
         scipy \
         pycocotools \
         onnx \
-        "onnxruntime-gpu" \
+        onnxruntime-gpu
+
+    # Extra packages required by this project only
+    pip install --no-cache-dir \
+        opencv-python-headless \
         tqdm \
         matplotlib \
         trimesh \
         "huggingface_hub>=0.20" \
-        onnxsim \
-        "opencv-python-headless>=4.9.0"  # 4.8.x has cv2.dnn.DictValue bug (breaks faster-coco-eval import)
+        onnxsim
 
 %environment
     export PYTHONUNBUFFERED=1
@@ -36,5 +36,4 @@ From: nvcr.io/nvidia/pytorch:23.10-py3
 %labels
     Author  msabbah@laas.fr
     Purpose RT-DETR v2 training for T-LESS objects
-    Base    nvcr.io/nvidia/pytorch:23.10-py3
-    Torch   2.2.0 + torchvision 0.17.0
+    Base    nvcr.io/nvidia/pytorch:25.06-py3 (RT-DETR v2 official base)
