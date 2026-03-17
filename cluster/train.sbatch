@@ -92,7 +92,7 @@ echo ''
 cd ${REPO}/third_party/RT-DETR/rtdetrv2_pytorch
 python tools/train.py \
     -c ${REPO}/configs/rtdetr_r50vd_tless.yml \
-    -r ${REPO}/weights/rtdetr_r50vd_objects365.pth \
+    -t ${REPO}/weights/rtdetr_r50vd_objects365.pth \
     --use-amp
 
 EXIT_CODE=$?
