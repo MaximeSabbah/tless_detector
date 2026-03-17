@@ -9,6 +9,8 @@
 __include__:
   - ../third_party/RT-DETR/rtdetrv2_pytorch/configs/rtdetrv2/rtdetrv2_r50vd_6x_coco.yml
 
+remap_mscoco_category: False  # T-LESS uses IDs 1-30, not the COCO non-contiguous ID scheme
+
 # ── Model ──────────────────────────────────────────────────────────────────────
 # Override the number of classes (30 T-LESS objects instead of 80 COCO classes)
 num_classes: 30
