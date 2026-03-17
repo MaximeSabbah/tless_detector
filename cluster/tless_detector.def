@@ -23,7 +23,7 @@
 #     pytorch:22.06-py3  →  CUDA 11.7, requires driver >= 450  (older clusters)
 #
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:24.01-py3
+From: nvcr.io/nvidia/pytorch:23.03-py3
 
 %post
     # System packages needed by OpenCV and other libs
