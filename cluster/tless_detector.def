@@ -1,10 +1,15 @@
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:23.10-py3
+From: nvcr.io/nvidia/pytorch:23.03-py3
 
 %post
     apt-get update -q && apt-get install -y -q \
         git wget libglib2.0-0 libsm6 libxext6 libxrender1 \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+    # Force torchvision 0.15.2 — the version RT-DETR was written for
+    # This is the only version where datapoints exists AND ConvertDtype exists
+    # Must use --no-deps to avoid pip pulling incompatible torch version
+    pip install --no-cache-dir --no-deps torchvision==0.15.2
 
     pip install --no-cache-dir \
         "numpy>=1.21,<2.0" \
@@ -27,4 +32,4 @@ From: nvcr.io/nvidia/pytorch:23.10-py3
 %labels
     Author  msabbah@laas.fr
     Purpose RT-DETR training for T-LESS objects
-    Base    nvcr.io/nvidia/pytorch:23.10-py3
+    Base    nvcr.io/nvidia/pytorch:23.03-py3 + torchvision==0.15.2
