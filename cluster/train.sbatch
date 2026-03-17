@@ -1,68 +1,69 @@
-#!/bin/bash
+#!/bin/sh -e
 # =============================================================================
-# SLURM job script for T-LESS RT-DETR training on pfcalcul (LAAS-CNRS)
+# Submit RT-DETR T-LESS training to pfcalcul SLURM
 #
-# Submit with:   sbatch cluster/train.sbatch
-# Monitor with:  squeue -u msabbah
-# Logs at:       ~/tless_detector/logs/train_JOBID.out
+# Usage:
+#   bash cluster/train.sbatch --gpu a100:1
+#   bash cluster/train.sbatch --gpu a30:1
 #
-# IMPORTANT: Replace msabbah and gepetto before submitting.
+# Monitor: squeue -u msabbah
+# Logs at: ~/tless_detector/logs/train_JOBID.{out,err}
 # =============================================================================
 
-#SBATCH --job-name=tless_rtdetr
-#SBATCH --partition=robgpu
-#SBATCH --account=dept_rob
-#SBATCH --gres=gpu:1                  # Request 1 GPU
-#SBATCH --cpus-per-task=8             # 8 CPU cores (4 for dataloader + headroom)
-#SBATCH --mem=32G                     # 32 GB RAM
-#SBATCH --time=20:00:00               # 20 hours max (72 epochs ~ 8-16h)
-#SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
-#SBATCH --error=/home/msabbah/tless_detector/logs/train_%j.err
-#SBATCH --mail-type=END,FAIL
-#SBATCH --mail-user=msabbah@laas.fr
+echo "example: $0 --gpu a100:1"
 
-# =============================================================================
-# Paths — only edit if you changed the repo location
-# =============================================================================
 REPO=/home/msabbah/tless_detector
+GPU_REQUIRED=true
+
+. /pfcalcul/tools/sbatchHelpers.sh
 
 # =============================================================================
-# Pre-flight checks
+# Pre-flight checks — run on the frontal before submitting
 # =============================================================================
 if [ ! -f "${REPO}/data/tless_coco_train.json" ]; then
-    echo "ERROR: COCO annotations not found at ${REPO}/data/tless_coco_train.json"
-    echo "Run on the frontal first: python scripts/prepare_dataset.py"
+    echo "ERROR: COCO annotations not found."
+    echo "       Run first: cd ${REPO} && python scripts/prepare_dataset.py"
     exit 1
 fi
 
 if [ ! -f "${REPO}/weights/rtdetr_r50vd_objects365.pth" ]; then
-    echo "ERROR: Pretrained weights not found at ${REPO}/weights/rtdetr_r50vd_objects365.pth"
-    echo "Download with:"
-    echo "  mkdir -p ${REPO}/weights"
-    echo "  wget https://github.com/lyuwenyu/storage/releases/download/v0.1/rtdetr_r50vd_2x_coco_objects365_from_paddle.pth \\"
-    echo "       -O ${REPO}/weights/rtdetr_r50vd_objects365.pth"
+    echo "ERROR: Pretrained weights not found at ${REPO}/weights/"
+    echo "       wget https://github.com/lyuwenyu/storage/releases/download/v0.1/rtdetr_r50vd_2x_coco_objects365_from_paddle.pth \\"
+    echo "            -O ${REPO}/weights/rtdetr_r50vd_objects365.pth"
+    exit 1
+fi
+
+if [ ! -d "${REPO}/.venv" ]; then
+    echo "ERROR: venv not found at ${REPO}/.venv"
+    echo "       Run setup first — see cluster/README.md Part 1.4"
     exit 1
 fi
 
 mkdir -p ${REPO}/logs
 
 # =============================================================================
-# Job info
+# Submit
 # =============================================================================
+jobMessage=$(
+sbatch ${sbatchopt} << eof
+#!/bin/bash
+#SBATCH --job-name=tless_rtdetr
+#SBATCH --partition=gpu
+#SBATCH --gres=gpu:${gpu}
+#SBATCH --ntasks=1
+#SBATCH --cpus-per-task=8
+#SBATCH --output=${REPO}/logs/train_%j.out
+#SBATCH --error=${REPO}/logs/train_%j.err
+#SBATCH --mail-type=END,FAIL
+#SBATCH --mail-user=msabbah@laas.fr
+
 echo "==========================================="
-echo "Job ID:   ${SLURM_JOB_ID}"
-echo "Node:     $(hostname)"
-echo "Start:    $(date)"
-echo "GPU:      $(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader)"
+echo "Job ID:   \${SLURM_JOB_ID}"
+echo "Node:     \$(hostname)"
+echo "Start:    \$(date)"
+echo "GPU:      \$(nvidia-smi --query-gpu=name,memory.total --format=csv,noheader)"
 echo "==========================================="
 
-# =============================================================================
-# Sync dataset to the compute node's fast local storage.
-# pfcalcul-specific: /pfcalcul/tools/datasync copies /datasets/tless/ from the
-# frontal's NFS to this node's local /datasets/ directory.
-# Path is identical on frontal and compute node — no config changes needed.
-# If the data is already synced (previous run), this is near-instant.
-# =============================================================================
 echo "Syncing dataset to local node storage ..."
 /pfcalcul/tools/datasync /datasets/tless/
 echo "Sync complete."
@@ -87,15 +88,19 @@ python tools/train.py \
     -t ${REPO}/weights/rtdetr_r50vd_objects365.pth \
     --use-amp
 
-EXIT_CODE=$?
+EXIT_CODE=\$?
 
 echo ""
 echo "==========================================="
-echo "Job finished at $(date)"
-echo "Exit code: ${EXIT_CODE}"
-if [ ${EXIT_CODE} -eq 0 ]; then
+echo "Job finished at \$(date)"
+echo "Exit code: \${EXIT_CODE}"
+if [ \${EXIT_CODE} -eq 0 ]; then
     echo "Best checkpoint: ${REPO}/output/rtdetr_r50vd_tless/best.pth"
 fi
 echo "==========================================="
 
-exit ${EXIT_CODE}
+exit \${EXIT_CODE}
+eof
+)
+
+showSubmitted
