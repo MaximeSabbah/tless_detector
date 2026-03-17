@@ -6,7 +6,8 @@
 # The base config is at:
 #   third_party/RT-DETR/rtdetr_pytorch/configs/rtdetr/rtdetr_r50vd_6x_coco.yml
 
-__include__: ../third_party/RT-DETR/rtdetrv2_pytorch/configs/rtdetrv2/rtdetrv2_r50vd_6x_coco.yml
+__include__:
+  - ../third_party/RT-DETR/rtdetrv2_pytorch/configs/rtdetrv2/rtdetrv2_r50vd_6x_coco.yml
 
 # ── Model ──────────────────────────────────────────────────────────────────────
 # Override the number of classes (30 T-LESS objects instead of 80 COCO classes)

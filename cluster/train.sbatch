@@ -25,19 +25,10 @@
 # Paths — only edit if you changed the repo location
 # =============================================================================
 REPO=/home/msabbah/tless_detector
-CONTAINER=/home/msabbah/containers/tless_detector.sif
 
 # =============================================================================
 # Pre-flight checks
 # =============================================================================
-if [ ! -f "${CONTAINER}" ]; then
-    echo "ERROR: Container not found at ${CONTAINER}"
-    echo "Build it locally and copy with:"
-    echo "  sudo apptainer build cluster/tless_detector.sif cluster/tless_detector.def"
-    echo "  scp cluster/tless_detector.sif msabbah@pfcalcul.laas.fr:~/containers/"
-    exit 1
-fi
-
 if [ ! -f "${REPO}/data/tless_coco_train.json" ]; then
     echo "ERROR: COCO annotations not found at ${REPO}/data/tless_coco_train.json"
     echo "Run on the frontal first: python scripts/prepare_dataset.py"
@@ -88,28 +79,21 @@ echo ""
 echo "Starting training ..."
 echo ""
 
-apptainer exec \
-    --nv \
-    --bind /home/msabbah:/home/msabbah \
-    --bind /datasets:/datasets \
-    ${CONTAINER} \
-    bash -c "
-        set -e
+source ${REPO}/.venv/bin/activate
 
-        echo '--- Container environment ---'
-        python --version
-        python -c 'import torch; print(\"PyTorch:\", torch.__version__)'
-        python -c 'import torch; print(\"CUDA available:\", torch.cuda.is_available())'
-        python -c 'import torch; print(\"GPU:\", torch.cuda.get_device_name())'
-        echo '-----------------------------'
-        echo ''
+echo '--- Environment ---'
+python --version
+python -c 'import torch; print("PyTorch:", torch.__version__)'
+python -c 'import torch; print("CUDA available:", torch.cuda.is_available())'
+python -c 'import torch; print("GPU:", torch.cuda.get_device_name())'
+echo '-------------------'
+echo ''
 
-        cd ${REPO}/third_party/RT-DETR/rtdetrv2_pytorch && \
-        python tools/train.py \
-            -c ${REPO}/configs/rtdetr_r50vd_tless.yml \
-            -r ${REPO}/weights/rtdetr_r50vd_objects365.pth \
-            --use-amp
-    "
+cd ${REPO}/third_party/RT-DETR/rtdetrv2_pytorch
+python tools/train.py \
+    -c ${REPO}/configs/rtdetr_r50vd_tless.yml \
+    -r ${REPO}/weights/rtdetr_r50vd_objects365.pth \
+    --use-amp
 
 EXIT_CODE=$?
 
