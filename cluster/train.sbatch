@@ -89,7 +89,7 @@ echo "Starting training ..."
 echo ""
 
 apptainer exec \
-    --nvcli \
+    --nv \
     --bind /home/msabbah:/home/msabbah \
     --bind /datasets:/datasets \
     ${CONTAINER} \
