@@ -1,28 +1,32 @@
 Bootstrap: docker
-From: nvcr.io/nvidia/pytorch:23.03-py3
+From: nvcr.io/nvidia/pytorch:23.10-py3
 
 %post
     apt-get update -q && apt-get install -y -q \
         git wget libglib2.0-0 libsm6 libxext6 libxrender1 \
         && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-    # Force torchvision 0.15.2 — the version RT-DETR was written for
-    # This is the only version where datapoints exists AND ConvertDtype exists
-    # Must use --no-deps to avoid pip pulling incompatible torch version
-    pip install --no-cache-dir --no-deps torchvision==0.15.2
-
+    # Critical pins — these exact combinations are confirmed working
     pip install --no-cache-dir \
-        "numpy>=1.21,<2.0" \
-        "huggingface_hub>=0.20" \
-        "onnx>=1.14" \
-        "onnxruntime-gpu<1.19" \
-        onnxsim \
-        pycocotools \
-        opencv-python-headless \
-        matplotlib \
-        tqdm \
+        "torch==2.2.0" \
+        "torchvision==0.17.0" \
+        "numpy>=1.21,<2.0"
+
+    # RTDETRv2 requirements — versions can float
+    pip install --no-cache-dir \
+        "faster-coco-eval>=1.6.6" \
+        PyYAML \
+        tensorboard \
         scipy \
-        trimesh
+        pycocotools \
+        onnx \
+        "onnxruntime-gpu" \
+        tqdm \
+        matplotlib \
+        trimesh \
+        "huggingface_hub>=0.20" \
+        onnxsim \
+        opencv-python-headless
 
 %environment
     export PYTHONUNBUFFERED=1
@@ -31,5 +35,6 @@ From: nvcr.io/nvidia/pytorch:23.03-py3
 
 %labels
     Author  msabbah@laas.fr
-    Purpose RT-DETR training for T-LESS objects
-    Base    nvcr.io/nvidia/pytorch:23.03-py3 + torchvision==0.15.2
+    Purpose RT-DETR v2 training for T-LESS objects
+    Base    nvcr.io/nvidia/pytorch:23.10-py3
+    Torch   2.2.0 + torchvision 0.17.0

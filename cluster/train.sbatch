@@ -104,11 +104,10 @@ apptainer exec \
         echo '-----------------------------'
         echo ''
 
-        cd ${REPO}
-
-        python third_party/RT-DETR/rtdetr_pytorch/tools/train.py \
-            -c configs/rtdetr_r50vd_tless.yml \
-            -r weights/rtdetr_r50vd_objects365.pth \
+        cd ${REPO}/third_party/RT-DETR/rtdetrv2_pytorch && \
+        python tools/train.py \
+            -c ${REPO}/configs/rtdetr_r50vd_tless.yml \
+            -r ${REPO}/weights/rtdetr_r50vd_objects365.pth \
             --use-amp
     "
 
