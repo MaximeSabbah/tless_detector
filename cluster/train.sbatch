@@ -67,14 +67,6 @@ echo "Syncing dataset to local node storage ..."
 /pfcalcul/tools/datasync /datasets/tless/
 echo "Sync complete."
 
-# =============================================================================
-# Run training inside the Apptainer container.
-#
-# --nvcli   : pfcalcul-specific GPU passthrough (more efficient than --nv).
-#             Documented in the platform's GPU guide.
-# --bind    : makes /home and /datasets visible at the same paths inside
-#             the container as outside (no path changes needed in configs).
-# =============================================================================
 echo ""
 echo "Starting training ..."
 echo ""

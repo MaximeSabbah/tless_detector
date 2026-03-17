@@ -1,21 +1,20 @@
 """
-Export a trained RT-DETR checkpoint to ONNX format.
+Export a trained RT-DETR v2 checkpoint to ONNX format.
 
 This script:
-1. Calls the official lyuwenyu/RT-DETR export tool (correct output format)
+1. Calls the official RT-DETR v2 export tool
 2. Simplifies the ONNX graph with onnxsim
 3. Renames output tensors to the names expected by isaac_ros_rtdetr:
        input:  "images"
        outputs: "labels", "boxes", "scores"
 4. Runs a dummy forward pass to verify shapes
 
-Run on the pfcalcul frontal (inside Apptainer) after training:
-    apptainer exec --nvcli ~/containers/tless_detector.sif \\
-        python scripts/export_onnx.py \\
-            --checkpoint output/rtdetr_r50vd_tless/best.pth \\
-            --output     output/tless_rtdetr.onnx
-
-IMPORTANT: Edit the LOGIN variable below before running.
+Run on the pfcalcul frontal after training:
+    cd ~/tless_detector
+    source .venv/bin/activate
+    python scripts/export_onnx.py \
+        --checkpoint output/rtdetr_r50vd_tless/best.pth \
+        --output     output/tless_rtdetr.onnx
 """
 import argparse
 import subprocess
@@ -27,26 +26,22 @@ import onnx
 import onnxruntime as ort
 import onnxsim
 
-# ── EDIT THIS ──────────────────────────────────────────────────────────────────
-LOGIN = "msabbah"
-# ──────────────────────────────────────────────────────────────────────────────
+REPO = Path(__file__).resolve().parent.parent
 
 # These are the exact names isaac_ros_rtdetr expects at the TRT binding level.
 EXPECTED_INPUT   = "images"
 EXPECTED_OUTPUTS = ["labels", "boxes", "scores"]
 
-# Must match the network_image_width/height in interface_specs.json
-INPUT_H, INPUT_W = 640, 640
+INPUT_SIZE = 640  # must match eval_spatial_size in the config
 
 
 def run_official_export(checkpoint: Path, config: Path, out_raw: Path):
-    """Use lyuwenyu's official export script — do NOT use Ultralytics export."""
-    export_script = Path(f"/home/{LOGIN}/tless_detector/third_party/RT-DETR"
-                         "/rtdetr_pytorch/tools/export_onnx.py")
+    """Use the official RT-DETR v2 export script."""
+    export_script = REPO / "third_party/RT-DETR/rtdetrv2_pytorch/tools/export_onnx.py"
 
     if not export_script.exists():
         raise FileNotFoundError(
-            f"RT-DETR export script not found at {export_script}.\n"
+            f"RT-DETR v2 export script not found at {export_script}.\n"
             "Did you run: git submodule update --init --recursive ?"
         )
 
@@ -54,11 +49,11 @@ def run_official_export(checkpoint: Path, config: Path, out_raw: Path):
         sys.executable, str(export_script),
         "-c", str(config),
         "-r", str(checkpoint),
-        "-f", str(out_raw),
+        "-o", str(out_raw),
+        "-s", str(INPUT_SIZE),
         "--check",
-        "--input", f"1 3 {INPUT_H} {INPUT_W}",  # static batch=1, required by Isaac ROS
     ]
-    print(f"\n[EXPORT] Running official RT-DETR export ...")
+    print(f"\n[EXPORT] Running RT-DETR v2 export ...")
     print("  " + " ".join(cmd))
     result = subprocess.run(cmd)
     if result.returncode != 0:
@@ -75,7 +70,7 @@ def run_official_export(checkpoint: Path, config: Path, out_raw: Path):
 def simplify(src: Path, dst: Path):
     """Fold constants and simplify the ONNX graph (makes TRT conversion faster)."""
     print(f"\n[SIMPLIFY] {src.name} → {dst.name} ...")
-    model      = onnx.load(str(src))
+    model = onnx.load(str(src))
     simplified, ok = onnxsim.simplify(model)
     if not ok:
         print("[SIMPLIFY] WARNING: onnxsim could not fully verify the model.")
@@ -101,8 +96,7 @@ def inspect(path: Path):
 def rename_if_needed(path: Path):
     """
     Rename input/output tensors to what isaac_ros_rtdetr expects.
-
-    The official lyuwenyu export usually produces the correct names already,
+    The official export usually produces the correct names already,
     but this is a safety net in case they differ.
     """
     model = onnx.load(str(path))
@@ -147,15 +141,16 @@ def verify_inference(path: Path):
         providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
     )
 
-    dummy   = np.random.rand(1, 3, INPUT_H, INPUT_W).astype(np.float32)
-    outputs = sess.run(None, {EXPECTED_INPUT: dummy})
+    dummy   = np.random.rand(1, 3, INPUT_SIZE, INPUT_SIZE).astype(np.float32)
+    size    = np.array([[INPUT_SIZE, INPUT_SIZE]], dtype=np.int64)
+    inputs  = {EXPECTED_INPUT: dummy, "orig_target_sizes": size}
+    outputs = sess.run(None, inputs)
     names   = [o.name for o in sess.get_outputs()]
 
     print("  Output tensors:")
     for name, arr in zip(names, outputs):
         print(f"    '{name}'  shape={arr.shape}  dtype={arr.dtype}")
 
-    # Validate shapes against what isaac_ros_rtdetr expects
     assert outputs[0].shape == (1, 300),    \
         f"'labels' shape should be (1, 300), got {outputs[0].shape}"
     assert outputs[1].shape == (1, 300, 4), \
@@ -168,12 +163,12 @@ def verify_inference(path: Path):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Export trained RT-DETR to ONNX for isaac_ros_rtdetr"
+        description="Export trained RT-DETR v2 to ONNX for isaac_ros_rtdetr"
     )
     parser.add_argument("--checkpoint", required=True,
                         help="Path to trained .pth checkpoint")
     parser.add_argument("--config",
-                        default=f"/home/{LOGIN}/tless_detector/configs/rtdetr_r50vd_tless.yml",
+                        default=str(REPO / "configs/rtdetr_r50vd_tless.yml"),
                         help="Path to training config YAML")
     parser.add_argument("--output", required=True,
                         help="Path for final .onnx output file")
@@ -196,14 +191,14 @@ def main():
     raw.unlink(missing_ok=True)
     inspect(out)
     rename_if_needed(out)
-    inspect(out)  # show final names
+    inspect(out)
     verify_inference(out)
 
     print(f"\n{'='*50}")
     print(f"Final ONNX saved at: {out}")
     print(f"{'='*50}")
     print("\nNext step: copy to your Isaac ROS machine and run trtexec.")
-    print("See cluster/README_cluster.md for the exact commands.")
+    print("See cluster/README.md for the exact commands.")
 
 
 if __name__ == "__main__":

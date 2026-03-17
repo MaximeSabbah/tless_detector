@@ -1,0 +1,16 @@
+# RT-DETR v2 requirements (mirrors third_party/RT-DETR/rtdetrv2_pytorch/requirements.txt)
+faster-coco-eval>=1.6.6
+PyYAML
+tensorboard
+scipy
+pycocotools
+onnx
+onnxruntime-gpu
+
+# Project extras
+opencv-python-headless
+tqdm
+matplotlib
+trimesh
+huggingface_hub>=0.20
+onnxsim
