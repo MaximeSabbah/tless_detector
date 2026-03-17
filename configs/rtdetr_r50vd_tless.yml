@@ -22,7 +22,7 @@ train_dataloader:
     img_folder: /datasets/tless
     ann_file: /home/msabbah/tless_detector/data/tless_coco_train.json
     return_masks: False
-  batch_size: 8       # reduce to 4 if you see CUDA out-of-memory errors
+  total_batch_size: 8   # reduce to 4 if you see CUDA out-of-memory errors
   shuffle: True
   num_workers: 4
   drop_last: True
@@ -32,7 +32,7 @@ val_dataloader:
     img_folder: /datasets/tless
     ann_file: /home/msabbah/tless_detector/data/tless_coco_val.json
     return_masks: False
-  batch_size: 4
+  total_batch_size: 4
   shuffle: False
   num_workers: 4
   drop_last: False
