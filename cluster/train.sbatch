@@ -8,12 +8,16 @@
 # =============================================================================
 
 #SBATCH --job-name=tless_rtdetr
-#SBATCH --partition=gpu
-#SBATCH --gres=gpu:rtx_a6000:1
 #SBATCH --ntasks=1
-#SBATCH --cpus-per-task=8
+#SBATCH --ntasks-per-node=1
+#SBATCH --gres=gpu:1
+#SBATCH --cpus-per-task=10
+#SBATCH --hint=nomultithread
+#SBATCH --mem-per-cpu=35gb
+#SBATCH --time=20:00:00
 #SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
 #SBATCH --error=/home/msabbah/tless_detector/logs/train_%j.err
+#SBATCH --partition=gpu
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=msabbah@laas.fr
 

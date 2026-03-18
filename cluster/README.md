@@ -162,6 +162,22 @@ python tools/train.py \
     -u val_dataloader.num_workers=0
 ```
 
+or 
+
+```bash
+cd ~/tless_detector
+source .venv/bin/activate
+
+cd third_party/RT-DETR/rtdetrv2_pytorch
+python tools/train.py \
+    -c ~/tless_detector/configs/rtdetr_r50vd_tless.yml \
+    -t ~/tless_detector/weights/rtdetr_r50vd_objects365.pth \
+    --use-amp \
+    -u epoches=1 \
+    -u train_dataloader.total_batch_size=2
+
+```
+
 Expected: it runs through the val set (slow without GPU — that's normal) and
 prints COCO mAP metrics. mAP will be near 0 since the model is not trained yet.
 **If it completes without a crash, the pipeline is correct.**
