@@ -26,7 +26,7 @@ train_dataloader:
     return_masks: False
   total_batch_size: 8
   shuffle: True
-  num_workers: 4
+  num_workers: 1
   drop_last: True
 
 val_dataloader:
@@ -36,7 +36,7 @@ val_dataloader:
     return_masks: False
   total_batch_size: 8
   shuffle: False
-  num_workers: 4
+  num_workers: 1
   drop_last: False
 
 # ── Training schedule ──────────────────────────────────────────────────────────
