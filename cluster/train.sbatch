@@ -9,7 +9,7 @@
 
 #SBATCH --job-name=tless_rtdetr
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:1
+#SBATCH --gres=gpu:rtx_a6000:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
 #SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
@@ -71,6 +71,8 @@ python -c 'import torch; print("CUDA available:", torch.cuda.is_available())'
 python -c 'import torch; print("GPU:", torch.cuda.get_device_name())'
 echo '-------------------'
 echo ''
+
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
 cd ${REPO}/third_party/RT-DETR/rtdetrv2_pytorch
 python tools/train.py \
