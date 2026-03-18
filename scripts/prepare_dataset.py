@@ -35,9 +35,9 @@ IMAGE_W, IMAGE_H = 720, 540
 
 
 def build_categories():
-    """COCO categories: id matches BOP obj_id (1-indexed, 1 to 30)."""
+    """COCO categories: id is 0-indexed (0 to 29) so RT-DETR can use it directly as a class index."""
     return [
-        {"id": i, "name": f"obj_{i:02d}", "supercategory": "tless"}
+        {"id": i - 1, "name": f"obj_{i:02d}", "supercategory": "tless"}
         for i in range(1, NUM_OBJECTS + 1)
     ]
 
@@ -92,7 +92,7 @@ def process_scene(scene_dir, global_image_id, global_ann_id):
             annotations.append({
                 "id":           global_ann_id,
                 "image_id":     global_image_id,
-                "category_id":  gt["obj_id"],   # 1-indexed, matches BOP obj_id
+                "category_id":  gt["obj_id"] - 1,  # 0-indexed (0–29) for RT-DETR class indices
                 "bbox":         [x, y, w, h],   # COCO: [x_min, y_min, w, h]
                 "area":         w * h,
                 "iscrowd":      0,
