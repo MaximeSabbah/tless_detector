@@ -24,9 +24,9 @@ train_dataloader:
     img_folder: /datasets/tless
     ann_file: /home/msabbah/tless_detector/data/tless_coco_train.json
     return_masks: False
-  total_batch_size: 4
+  total_batch_size: 8
   shuffle: True
-  num_workers: 1
+  num_workers: 4
   drop_last: True
 
 val_dataloader:
@@ -34,9 +34,9 @@ val_dataloader:
     img_folder: /datasets/tless
     ann_file: /home/msabbah/tless_detector/data/tless_coco_val.json
     return_masks: False
-  total_batch_size: 4
+  total_batch_size: 8
   shuffle: False
-  num_workers: 1
+  num_workers: 4
   drop_last: False
 
 # ── Training schedule ──────────────────────────────────────────────────────────

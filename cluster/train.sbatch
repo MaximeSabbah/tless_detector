@@ -10,8 +10,8 @@
 #SBATCH --job-name=tless_rtdetr
 #SBATCH --ntasks=1
 #SBATCH --ntasks-per-node=1
-#SBATCH --gres=gpu:1
-#SBATCH --cpus-per-task=1
+#SBATCH --gres=gpu:rtx_a6000:1
+#SBATCH --cpus-per-task=4
 #SBATCH --hint=nomultithread
 #SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
 #SBATCH --error=/home/msabbah/tless_detector/logs/train_%j.err
