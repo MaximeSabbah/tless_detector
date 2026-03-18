@@ -13,11 +13,9 @@
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=10
 #SBATCH --hint=nomultithread
-#SBATCH --time=20:00:00
 #SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
 #SBATCH --error=/home/msabbah/tless_detector/logs/train_%j.err
 #SBATCH --partition=gpu
-#SBATCH --exclude=perelha
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=msabbah@laas.fr
 
