@@ -17,6 +17,7 @@
 #SBATCH --output=/home/msabbah/tless_detector/logs/train_%j.out
 #SBATCH --error=/home/msabbah/tless_detector/logs/train_%j.err
 #SBATCH --partition=gpu
+#SBATCH --exclude=perelha
 #SBATCH --mail-type=END,FAIL
 #SBATCH --mail-user=msabbah@laas.fr
 
