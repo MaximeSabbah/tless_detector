@@ -76,12 +76,15 @@ echo '-------------------'
 echo ''
 
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export PYTHONUNBUFFERED=1
 
 cd ${REPO}/third_party/RT-DETR/rtdetrv2_pytorch
 python tools/train.py \
     -c ${REPO}/configs/rtdetr_r50vd_tless.yml \
     -t ${REPO}/weights/rtdetr_r50vd_objects365.pth \
-    --use-amp
+    --use-amp \
+    -u sync_bn=False \
+    -u print_freq=10
 
 EXIT_CODE=$?
 
