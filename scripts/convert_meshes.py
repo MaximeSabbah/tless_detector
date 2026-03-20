@@ -4,41 +4,86 @@ Convert T-LESS CAD models from .ply to .obj, centering the mesh at its centroid.
 FoundationPose requires the mesh origin to be at the center of the object.
 The T-LESS models ship as .ply files; this script converts them to .obj.
 
-Run once (locally or on pfcalcul frontal):
-    python scripts/convert_meshes.py
+--- Quick start ---
 
-Output goes to:  data/tless_obj_meshes/obj_000001.obj ... obj_000030.obj
+1. Download the meshes (if not already done):
+       python data/download_tless.py --meshes-only --out-dir ./tless_meshes
 
-You then need to copy these .obj files to your Isaac ROS machine.
+2. Convert for FoundationPose:
+       python scripts/convert_meshes.py
+
+3. Copy .obj files to the Isaac ROS machine:
+       scp data/tless_obj_meshes/*.obj user@robot:${ISAAC_ROS_WS}/isaac_ros_assets/tless_meshes/
+
+--- T-LESS model variants ---
+
+tless_models.zip contains three subdirectories:
+  models_cad/     Original CAD models — best for FoundationPose (default)
+  models_eval/    Simplified models used for BOP evaluation metrics
+  models_reconst/ Reconstructed from real scans
+
+--- Options ---
+
+    --models-dir PATH   Directory containing T-LESS .ply files.
+                        Default: ./tless_meshes/models_cad
+    --out-dir PATH      Output directory for .obj files.
+                        Default: data/tless_obj_meshes
 
 Requirements:
     pip install trimesh
-
-IMPORTANT: Edit the PLY_DIR and OUT_DIR variables below if needed.
-           If you are running on pfcalcul, download tless_models.zip first
-           (uncomment that line in data/download_tless.py).
 """
-import trimesh
+import argparse
 from pathlib import Path
 
-# Input: T-LESS .ply models (download tless_models.zip first)
-PLY_DIR = Path("/datasets/tless/models")
-
-# Output: .obj files ready for FoundationPose
-OUT_DIR = Path("data/tless_obj_meshes")
-OUT_DIR.mkdir(parents=True, exist_ok=True)
+import trimesh
 
 
-def convert_all():
-    ply_files = sorted(PLY_DIR.glob("obj_*.ply"))
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Convert T-LESS .ply meshes to .obj for FoundationPose."
+    )
+    parser.add_argument(
+        "--models-dir",
+        type=Path,
+        default=Path("./tless_meshes/models_cad"),
+        help=(
+            "Directory containing T-LESS obj_XXXXXX.ply files. "
+            "Use models_cad/ (default), models_eval/, or models_reconst/ "
+            "from the extracted tless_models.zip. "
+            "Default: ./tless_meshes/models_cad"
+        ),
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=Path("data/tless_obj_meshes"),
+        help=(
+            "Output directory for converted .obj files. "
+            "Default: data/tless_obj_meshes"
+        ),
+    )
+    return parser.parse_args()
+
+
+def convert_all(models_dir: Path, out_dir: Path):
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    ply_files = sorted(models_dir.glob("obj_*.ply"))
 
     if not ply_files:
-        print(f"ERROR: No .ply files found in {PLY_DIR}")
+        print(f"ERROR: No .ply files found in {models_dir}")
         print("Did you download tless_models.zip ?")
-        print("Uncomment that line in data/download_tless.py and re-run it.")
+        print("  python data/download_tless.py --meshes-only --out-dir ./tless_meshes")
+        print()
+        print("Available model variants (pass with --models-dir):")
+        print("  ./tless_meshes/models_cad      ← recommended for FoundationPose")
+        print("  ./tless_meshes/models_eval")
+        print("  ./tless_meshes/models_reconst")
         return
 
-    print(f"Found {len(ply_files)} models to convert.\n")
+    print(f"Found {len(ply_files)} models in {models_dir}")
+    print(f"Output: {out_dir.resolve()}")
+    print()
 
     for ply_path in ply_files:
         mesh     = trimesh.load(str(ply_path))
@@ -47,18 +92,19 @@ def convert_all():
         # Translate mesh so that centroid is at origin (0, 0, 0)
         mesh.apply_translation(-centroid)
 
-        out_path = OUT_DIR / ply_path.with_suffix(".obj").name
+        out_path = out_dir / ply_path.with_suffix(".obj").name
         mesh.export(str(out_path))
 
         print(f"  {ply_path.name}"
               f"  centroid_offset={centroid.round(3)}"
               f"  →  {out_path.name}")
 
-    print(f"\nAll {len(ply_files)} meshes converted to: {OUT_DIR.resolve()}")
+    print(f"\nAll {len(ply_files)} meshes converted to: {out_dir.resolve()}")
     print()
     print("Copy these files to your Isaac ROS machine, for example:")
-    print("  scp data/tless_obj_meshes/*.obj user@robot:${ISAAC_ROS_WS}/isaac_ros_assets/tless_meshes/")
+    print(f"  scp {out_dir}/*.obj user@robot:${{ISAAC_ROS_WS}}/isaac_ros_assets/tless_meshes/")
 
 
 if __name__ == "__main__":
-    convert_all()
+    args = parse_args()
+    convert_all(args.models_dir, args.out_dir)
