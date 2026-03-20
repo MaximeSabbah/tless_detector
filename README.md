@@ -173,7 +173,7 @@ rviz2 -d /opt/ros/jazzy/share/isaac_ros_foundationpose/rviz/foundationpose_track
 
 Look for:
 - `/pose_estimation/output_pose` — 6-DoF pose as a TF/marker
-- `/rt_detr_detections` — 2D bounding boxes from RT-DETR
+- `/detections_output` — 2D bounding boxes from RT-DETR
 
 If detections are empty, RT-DETR did not detect the object: try a different image,
 lower `confidence_threshold` in the launch command (e.g. `confidence_threshold:=0.5`),
@@ -181,20 +181,25 @@ or verify the correct object mesh.
 
 ### Step 6 — Measure pipeline throughput (optional)
 
-The bottleneck is typically the FoundationPose refine/score networks, not RT-DETR.
-While the bag is playing, measure the output pose rate in a fourth terminal:
+While the bag is playing (looping), measure each stage in separate terminals:
 
 ```bash
 source /opt/ros/jazzy/setup.bash
-ros2 topic hz /tracking/output
+ros2 topic hz /detections_output   # RT-DETR output rate
+ros2 topic hz /tracking/output     # FoundationPose tracker output rate
 ```
 
-Expected throughput on RTX 4500 Ada: **~5–10 Hz** end-to-end (detection + refine + score).
-To measure RT-DETR alone:
+**Measured throughput on RTX 4500 Ada (640×480, T-LESS obj_23, looping bag):**
 
-```bash
-ros2 topic hz /rt_detr_detections
-```
+| Stage | Rate |
+|---|---|
+| RT-DETR detection | ~3.5 Hz |
+| FoundationPose tracking | ~3.5 Hz |
+
+The std dev is high (~0.4 s) because each bag loop triggers a FoundationPose
+**re-initialisation** (the expensive refine+score step). In a live camera deployment
+where the object stays visible, initialisation happens once and the tracker sustains a
+stable rate thereafter.
 
 The `reset_period` parameter in the FoundationPose launch config controls how often the
 tracker re-initialises from a fresh RT-DETR detection (default: every 5 s). Lowering it

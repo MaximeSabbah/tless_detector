@@ -7,7 +7,9 @@ This script:
 3. Renames output tensors to the names expected by isaac_ros_rtdetr:
        input:  "images"
        outputs: "labels", "boxes", "scores"
-4. Runs a dummy forward pass to verify shapes
+4. Bakes /255 normalisation into the graph so the model accepts raw [0, 255]
+   float32 input — matching isaac_ros ImageToTensorNode with scale=False (default).
+5. Runs a dummy forward pass to verify shapes
 
 Run on the pfcalcul frontal after training:
     cd ~/tless_detector
@@ -130,10 +132,62 @@ def rename_if_needed(path: Path):
     print("[RENAME] Done.")
 
 
+def bake_normalization(path: Path):
+    """
+    Prepend a Div-by-255 node to the ONNX graph.
+
+    The RT-DETR model was trained on [0, 1] normalised images, but
+    isaac_ros ImageToTensorNode uses scale=False by default (raw [0, 255] floats).
+    Baking the division in makes our model a drop-in replacement for the official
+    NVIDIA RT-DETR model without requiring any changes to the ROS launch files.
+
+    Graph transform:
+        images (external input, [0-255])
+          → Div(255.0)
+          → images_normalized ([0-1])
+          → [rest of model, unchanged]
+
+    The external input tensor name 'images' is preserved so TRT binding names
+    and the isaac_ros rtdetr_preprocessor output name both stay compatible.
+    """
+    print(f"\n[NORMALIZE] Baking /255 normalisation into {path.name} ...")
+    model = onnx.load(str(path))
+    graph = model.graph
+
+    orig_name = graph.input[0].name   # 'images'  — keep as external name
+    norm_name = orig_name + '_normalized'  # internal wire after division
+
+    # Re-route all existing nodes that consumed 'images' to 'images_normalized'
+    for node in graph.node:
+        node.input[:] = [norm_name if n == orig_name else n for n in node.input]
+
+    # Constant: scalar 255.0
+    scale_init = onnx.numpy_helper.from_array(
+        np.array(255.0, dtype=np.float32), name='_norm_scale_255'
+    )
+    graph.initializer.append(scale_init)
+
+    # Div node inserted at the front: images_normalized = images / 255.0
+    div_node = onnx.helper.make_node(
+        'Div',
+        inputs=[orig_name, '_norm_scale_255'],
+        outputs=[norm_name],
+        name='_normalize_div_255',
+    )
+    graph.node.insert(0, div_node)
+
+    # graph.input[0].name stays 'images' — TRT binding name is unchanged
+
+    onnx.checker.check_model(model)
+    onnx.save(model, str(path))
+    print("[NORMALIZE] Done — model now accepts raw [0, 255] float32 input.")
+
+
 def verify_inference(path: Path):
     """
     Run a dummy forward pass with ONNXRuntime.
     Confirms the model loads correctly and output shapes match expectations.
+    Uses [0, 255] dummy values to match the baked normalisation.
     """
     print(f"\n[VERIFY] Running dummy inference with ONNXRuntime ...")
     sess = ort.InferenceSession(
@@ -141,7 +195,7 @@ def verify_inference(path: Path):
         providers=["CUDAExecutionProvider", "CPUExecutionProvider"]
     )
 
-    dummy   = np.random.rand(1, 3, INPUT_SIZE, INPUT_SIZE).astype(np.float32)
+    dummy   = (np.random.rand(1, 3, INPUT_SIZE, INPUT_SIZE).astype(np.float32) * 255.0)
     size    = np.array([[INPUT_SIZE, INPUT_SIZE]], dtype=np.int64)
     inputs  = {EXPECTED_INPUT: dummy, "orig_target_sizes": size}
     outputs = sess.run(None, inputs)
@@ -189,8 +243,8 @@ def main():
     run_official_export(ckpt, config, raw)
     simplify(raw, out)
     raw.unlink(missing_ok=True)
-    inspect(out)
     rename_if_needed(out)
+    bake_normalization(out)
     inspect(out)
     verify_inference(out)
 
