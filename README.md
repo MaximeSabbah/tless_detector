@@ -25,7 +25,8 @@ tless_detector/
 │   ├── verify_dataset.py        # visual sanity check (JupyterLab)
 │   ├── predict.py               # run inference on unseen images
 │   ├── export_onnx.py           # ONNX export + tensor name fix
-│   └── convert_meshes.py        # T-LESS .ply → centered .obj for FoundationPose
+│   ├── convert_meshes.py        # T-LESS .ply → centered .obj for FoundationPose
+│   └── create_tless_bag.py      # create a rosbag from an RGB image (offline testing)
 ├── configs/
 │   └── rtdetr_r50vd_tless.yml   # RT-DETR training config
 ├── cluster/
@@ -99,25 +100,89 @@ python scripts/convert_meshes.py \
 
 Both scripts accept `--help` for all options.
 
-## After training: Isaac ROS integration
+## Offline end-to-end test with FoundationPose (rosbag + RViz)
+
+Run these four steps **inside the Isaac ROS container** to validate the full pipeline
+against a single test image, without a live camera.
+
+### Step 1 — Convert RT-DETR ONNX → TensorRT (once, ~5 min)
 
 ```bash
-# On the Isaac ROS machine, inside the container:
+mkdir -p ${ISAAC_ROS_WS}/isaac_ros_assets/models/tless
 /usr/src/tensorrt/bin/trtexec \
-    --onnx=tless_rtdetr.onnx \
-    --saveEngine=tless_rtdetr.plan \
+    --onnx=${ISAAC_ROS_WS}/tless_detector/output/rtdetr_r50vd_tless/tless_rtdetr.onnx \
+    --saveEngine=${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/tless_rtdetr.plan \
     --minShapes=images:1x3x640x640 \
     --optShapes=images:1x3x640x640 \
     --maxShapes=images:1x3x640x640 \
     --fp16
+```
 
+### Step 2 — Create a rosbag from a test image (once)
+
+```bash
+python ${ISAAC_ROS_WS}/tless_detector/scripts/create_tless_bag.py \
+    --image ${ISAAC_ROS_WS}/tless_detector/data/ima_b21d9f4.jpg \
+    --crop \
+    --out-dir ${ISAAC_ROS_WS}/tless_detector/data/tless_test_bag
+```
+
+`--crop` center-crops the image to 4:3 before resizing to 640×480, which avoids
+distortion on portrait phone photos.
+
+> **Note on depth**: the bag uses a constant synthetic depth (default 0.5 m).
+> The pipeline will run end-to-end, but pose accuracy requires real depth from a
+> depth sensor and correct `--fx/--fy/--cx/--cy` intrinsics.
+
+### Step 3 — Launch FoundationPose (Terminal 1)
+
+```bash
+source /opt/ros/jazzy/setup.bash
+ros2 launch isaac_ros_examples isaac_ros_examples.launch.py \
+    launch_fragments:=foundationpose_tracking \
+    interface_specs_file:=${ISAAC_ROS_WS}/isaac_ros_assets/isaac_ros_foundationpose/quickstart_interface_specs.json \
+    mesh_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/tless_meshes/obj_000023.obj \
+    rt_detr_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/tless_rtdetr.plan \
+    refine_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/refine_trt_engine.plan \
+    score_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/score_trt_engine.plan
+```
+
+Change `obj_000001.obj` to match the T-LESS object in your image (001–030).
+
+### Step 4 — Play the bag (Terminal 2, after ~5 s)
+
+```bash
+ros2 bag play --loop ${ISAAC_ROS_WS}/tless_detector/data/tless_test_bag
+```
+
+### Step 5 — Open RViz (Terminal 3)
+
+```bash
+rviz2 -d /opt/ros/jazzy/share/isaac_ros_foundationpose/rviz/foundationpose_tracking.rviz
+```
+
+Look for:
+- `/pose_estimation/output_pose` — 6-DoF pose as a TF/marker
+- `/rt_detr_detections` — 2D bounding boxes from RT-DETR
+
+If detections are empty, RT-DETR did not detect the object: try a different image,
+lower `confidence_threshold` in `isaac_ros_foundationpose_tracking_core.launch.py`,
+or verify the correct object mesh.
+
+## After training: live Isaac ROS integration
+
+Replace `foundationpose_tracking` with
+`realsense_mono_rect_depth,foundationpose_tracking` to add the RealSense driver —
+no other change needed:
+
+```bash
 ros2 launch isaac_ros_examples isaac_ros_examples.launch.py \
     launch_fragments:=realsense_mono_rect_depth,foundationpose_tracking \
+    interface_specs_file:=${ISAAC_ROS_WS}/isaac_ros_assets/isaac_ros_foundationpose/quickstart_interface_specs.json \
     mesh_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/tless_meshes/obj_000001.obj \
-    score_engine_file_path:=score_trt_engine.plan \
-    refine_engine_file_path:=refine_trt_engine.plan \
-    rt_detr_engine_file_path:=tless_rtdetr.plan \
-    interface_specs_file:=${ISAAC_ROS_WS}/isaac_ros_assets/isaac_ros_foundationpose/quickstart_interface_specs.json
+    rt_detr_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/tless_rtdetr.plan \
+    refine_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/refine_trt_engine.plan \
+    score_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/score_trt_engine.plan
 ```
 
 Change `obj_000001.obj` to the T-LESS object you want to track (001 to 030).
