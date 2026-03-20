@@ -34,6 +34,46 @@ tless_detector/
     └── RT-DETR/                 # git submodule (lyuwenyu/RT-DETR)
 ```
 
+## Pre-trained models
+
+Trained weights are hosted on Hugging Face:
+**[maximesabbah/tless_rtdetr](https://huggingface.co/maximesabbah/tless_rtdetr)**
+
+| File | Description |
+|---|---|
+| `best.pth` | PyTorch checkpoint — best validation mAP (~0.94, trained 72 epochs) |
+| `tless_rtdetr.onnx` | ONNX export — ready for ONNXRuntime or TensorRT conversion |
+
+### Download
+
+```bash
+pip install huggingface_hub
+
+python3 - <<'EOF'
+from huggingface_hub import hf_hub_download
+
+# PyTorch checkpoint
+hf_hub_download(
+    repo_id="maximesabbah/tless_rtdetr",
+    filename="best.pth",
+    local_dir="output/rtdetr_r50vd_tless/",
+)
+
+# ONNX model
+hf_hub_download(
+    repo_id="maximesabbah/tless_rtdetr",
+    filename="tless_rtdetr.onnx",
+    local_dir="output/rtdetr_r50vd_tless/",
+)
+EOF
+```
+
+Or with the CLI:
+```bash
+huggingface-cli download maximesabbah/tless_rtdetr best.pth         --local-dir output/rtdetr_r50vd_tless/
+huggingface-cli download maximesabbah/tless_rtdetr tless_rtdetr.onnx --local-dir output/rtdetr_r50vd_tless/
+```
+
 ## Training: see `cluster/README.md`
 
 The full step-by-step guide (setup → train → test → export → TensorRT) is in
