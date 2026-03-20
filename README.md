@@ -114,9 +114,15 @@ mkdir -p ${ISAAC_ROS_WS}/isaac_ros_assets/models/tless
     --saveEngine=${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/tless_rtdetr.plan \
     --minShapes=images:1x3x640x640 \
     --optShapes=images:1x3x640x640 \
-    --maxShapes=images:1x3x640x640 \
-    --fp16
+    --maxShapes=images:1x3x640x640
 ```
+
+> **Do not use `--fp16`.**
+> RT-DETR v2 uses LayerNorm heavily in its transformer encoder.
+> FP16 causes overflow in those layers, dropping obj_23 confidence from 0.918 to 0.437
+> (verified with `scripts/compare_backends.py`).
+> FP32 on RTX 4500 Ada is fast enough for real-time use.
+> ONNX vs PyTorch parity: PTH=0.918 / ONNX=0.918 / TRT-FP32=0.916.
 
 ### Step 2 — Create a rosbag from a test image (once)
 
@@ -144,10 +150,14 @@ ros2 launch isaac_ros_examples isaac_ros_examples.launch.py \
     mesh_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/tless_meshes/obj_000023.obj \
     rt_detr_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/tless_rtdetr.plan \
     refine_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/refine_trt_engine.plan \
-    score_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/score_trt_engine.plan
+    score_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/score_trt_engine.plan \
+    confidence_threshold:=0.85
 ```
 
-Change `obj_000001.obj` to match the T-LESS object in your image (001–030).
+Change `obj_000023.obj` to match the T-LESS object in your image (001–030).
+
+> **Confidence threshold**: 0.85 works well for the trained model (obj_23 TRT-FP32 score = 0.916).
+> Lower it only if the object is not detected. Do not go below 0.5 to avoid spurious detections.
 
 ### Step 4 — Play the bag (Terminal 2, after ~5 s)
 
@@ -166,8 +176,29 @@ Look for:
 - `/rt_detr_detections` — 2D bounding boxes from RT-DETR
 
 If detections are empty, RT-DETR did not detect the object: try a different image,
-lower `confidence_threshold` in `isaac_ros_foundationpose_tracking_core.launch.py`,
+lower `confidence_threshold` in the launch command (e.g. `confidence_threshold:=0.5`),
 or verify the correct object mesh.
+
+### Step 6 — Measure pipeline throughput (optional)
+
+The bottleneck is typically the FoundationPose refine/score networks, not RT-DETR.
+While the bag is playing, measure the output pose rate in a fourth terminal:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+ros2 topic hz /tracking/output
+```
+
+Expected throughput on RTX 4500 Ada: **~5–10 Hz** end-to-end (detection + refine + score).
+To measure RT-DETR alone:
+
+```bash
+ros2 topic hz /rt_detr_detections
+```
+
+The `reset_period` parameter in the FoundationPose launch config controls how often the
+tracker re-initialises from a fresh RT-DETR detection (default: every 5 s). Lowering it
+increases accuracy at the cost of throughput.
 
 ## After training: live Isaac ROS integration
 
@@ -182,7 +213,8 @@ ros2 launch isaac_ros_examples isaac_ros_examples.launch.py \
     mesh_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/tless_meshes/obj_000001.obj \
     rt_detr_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/tless/tless_rtdetr.plan \
     refine_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/refine_trt_engine.plan \
-    score_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/score_trt_engine.plan
+    score_engine_file_path:=${ISAAC_ROS_WS}/isaac_ros_assets/models/foundationpose/score_trt_engine.plan \
+    confidence_threshold:=0.85
 ```
 
 Change `obj_000001.obj` to the T-LESS object you want to track (001 to 030).

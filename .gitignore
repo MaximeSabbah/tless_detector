@@ -39,3 +39,7 @@ logs/
 
 # Tless meshes
 tless_meshes/
+
+# Rosbags (binary, too large for git)
+data/*.bag
+data/*_bag/
