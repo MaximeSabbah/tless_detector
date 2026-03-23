@@ -92,8 +92,12 @@ def convert_all(models_dir: Path, out_dir: Path):
         # Scale from millimetres (T-LESS native unit) to metres (FoundationPose)
         mesh.apply_scale(0.001)
 
-        # Translate mesh so that centroid is at origin (0, 0, 0)
-        mesh.apply_translation(-centroid * 0.001)
+        # Translate so the bounding-box centre is at origin (0, 0, 0).
+        # FoundationPose needs the mesh origin at the visual centre of the object.
+        # Bounding-box centre is a better approximation than the centroid (CoM)
+        # for asymmetric objects like many T-LESS parts.
+        bbox_center = (mesh.bounds[0] + mesh.bounds[1]) / 2.0
+        mesh.apply_translation(-bbox_center)
 
         out_path = out_dir / ply_path.with_suffix(".obj").name
         mesh.export(str(out_path))
