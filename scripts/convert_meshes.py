@@ -89,8 +89,11 @@ def convert_all(models_dir: Path, out_dir: Path):
         mesh     = trimesh.load(str(ply_path))
         centroid = mesh.centroid.copy()
 
+        # Scale from millimetres (T-LESS native unit) to metres (FoundationPose)
+        mesh.apply_scale(0.001)
+
         # Translate mesh so that centroid is at origin (0, 0, 0)
-        mesh.apply_translation(-centroid)
+        mesh.apply_translation(-centroid * 0.001)
 
         out_path = out_dir / ply_path.with_suffix(".obj").name
         mesh.export(str(out_path))
